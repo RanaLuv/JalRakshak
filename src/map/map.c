@@ -5,13 +5,13 @@
 
 #include "map.h"
 
-/* Check whether a node ID is valid */
+// Check whether a node id is valid or not. 
 static int valid_node(const Graph *g, int node)
 {
     return g != NULL && node >= 0 && node < g->n;
 }
 
-/* Create an empty graph */
+//Creating an empty graph.
 Graph *graph_create(int n)
 {
     if (n <= 0 || n > MAX_NODES)
@@ -33,7 +33,7 @@ Graph *graph_create(int n)
     return g;
 }
 
-/* Free every edge and then the graph */
+// Freeing every edge and then the graph.
 void graph_free(Graph *g)
 {
     if (g == NULL)
@@ -52,14 +52,14 @@ void graph_free(Graph *g)
     free(g);
 }
 
-/* Add an undirected road */
+// Add an undirected road.
 Status graph_add_edge(Graph *g, int u, int v, double w)
 {
     if (!valid_node(g, u) || !valid_node(g, v) ||
         u == v || w < 0.0)
         return STATUS_INVALID;
 
-    /* Check for an existing road */
+    //Checking for an existing road.
     Edge *current = g->adj[u];
 
     while (current != NULL) {
@@ -69,7 +69,7 @@ Status graph_add_edge(Graph *g, int u, int v, double w)
         current = current->next;
     }
 
-    /* Allocate both directions before modifying the graph */
+    // Allocating both directions before modifying the graph.
     Edge *uv = malloc(sizeof(Edge));
     Edge *vu = malloc(sizeof(Edge));
 
@@ -95,7 +95,7 @@ Status graph_add_edge(Graph *g, int u, int v, double w)
     return STATUS_OK;
 }
 
-/* Block or unblock a road in both directions */
+// Block or unblock a road in both directions.
 Status graph_set_road(Graph *g, int u, int v, RoadStatus s)
 {
     if (!valid_node(g, u) || !valid_node(g, v) ||
@@ -123,7 +123,7 @@ Status graph_set_road(Graph *g, int u, int v, RoadStatus s)
     return STATUS_OK;
 }
 
-/* BFS: find all nodes reachable from src */
+// BFS: find all nodes reachable from src.
 void graph_bfs(const Graph *g, int src, int visited[])
 {
     if (visited == NULL)
@@ -140,7 +140,7 @@ void graph_bfs(const Graph *g, int src, int visited[])
     if (!valid_node(g, src))
         return;
 
-    /* Array-based queue */
+    // Array-based queue.
     int queue[MAX_NODES];
     int front = 0;
     int rear = 0;
@@ -155,7 +155,7 @@ void graph_bfs(const Graph *g, int src, int visited[])
         while (current != NULL) {
             int v = current->to;
 
-            /* Ignore blocked roads */
+            // Ignore blocked roads.
             if (current->status != ROAD_BLOCKED &&
                 !visited[v]) {
                 visited[v] = 1;
@@ -167,7 +167,7 @@ void graph_bfs(const Graph *g, int src, int visited[])
     }
 }
 
-/* Return 1 if dst is reachable from src, otherwise 0 */
+// Return 1 if dst is reachable from src, otherwise 0.
 int graph_reachable(const Graph *g, int src, int dst)
 {
     if (!valid_node(g, src) || !valid_node(g, dst))
@@ -180,7 +180,7 @@ int graph_reachable(const Graph *g, int src, int dst)
     return visited[dst];
 }
 
-/* Find a location using its exact name */
+// Find a location using its exact name.
 int find_node(const Graph *g, const char *name)
 {
     if (g == NULL || name == NULL)
@@ -194,7 +194,7 @@ int find_node(const Graph *g, const char *name)
     return -1;
 }
 
-/* Build a sample town with 9 locations and 2 shelters */
+// Build a sample town with 9 locations and 2 shelters.
 Graph *build_sample_map(void)
 {
     Graph *g = graph_create(9);
@@ -203,15 +203,15 @@ Graph *build_sample_map(void)
         return NULL;
 
     const char *names[9] = {
-        "Riverside",       /* 0 */
-        "Market",          /* 1 */
-        "OldTown",         /* 2 */
-        "BridgeWest",      /* 3 */
-        "BridgeEast",      /* 4 */
-        "SchoolShelter",   /* 5 */
-        "HillRoad",        /* 6 */
-        "HillShelter",     /* 7 */
-        "Hospital"         /* 8 */
+        "Riverside",        
+        "Market",          
+        "OldTown",         
+        "BridgeWest",      
+        "BridgeEast",      
+        "SchoolShelter",   
+        "HillRoad",        
+        "HillShelter",     
+        "Hospital"         
     };
 
     for (int i = 0; i < 9; i++) {
@@ -221,7 +221,7 @@ Graph *build_sample_map(void)
     g->is_shelter[5] = 1;
     g->is_shelter[7] = 1;
 
-    /* Roads on the Riverside side */
+    // Roads on the Riverside side.
     if (graph_add_edge(g, 0, 1, 2.0) != STATUS_OK ||
         graph_add_edge(g, 0, 2, 3.0) != STATUS_OK ||
         graph_add_edge(g, 1, 2, 1.0) != STATUS_OK ||
@@ -230,13 +230,13 @@ Graph *build_sample_map(void)
         return NULL;
     }
 
-    /* The bridge connecting both sides */
+    // The bridge connecting both sides.
     if (graph_add_edge(g, 3, 4, 1.0) != STATUS_OK) {
         graph_free(g);
         return NULL;
     }
 
-    /* Roads on the other side */
+    // Roads on the other side.
     if (graph_add_edge(g, 4, 5, 2.0) != STATUS_OK ||
         graph_add_edge(g, 4, 6, 2.0) != STATUS_OK ||
         graph_add_edge(g, 6, 7, 3.0) != STATUS_OK ||
@@ -249,7 +249,7 @@ Graph *build_sample_map(void)
     return g;
 }
 
-/* Display the adjacency list */
+// Display the adjacency list.
 void graph_print(const Graph *g)
 {
     if (g == NULL)
