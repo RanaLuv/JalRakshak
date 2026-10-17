@@ -4,6 +4,10 @@
 
 #include "common.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* A road connecting one node to another */
 typedef struct Edge {
     int to;
@@ -38,5 +42,9 @@ int find_node(const Graph *g, const char *name);
 
 /* Optional helper for displaying the map */
 void graph_print(const Graph *g);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
