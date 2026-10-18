@@ -7,7 +7,8 @@ int main(void)
     ReportTable *table;
     AlertHeap *heap;
     CitizenReport a = {1, 5, HAZARD_FLOOD, 3, 1000};
-    CitizenReport b = {2, 5, HAZARD_FLOOD, 3, 1010};
+    CitizenReport b = {2, 5, HAZARD_LANDSLIDE, 1, 1010};
+    CitizenReport c = {2, 5, HAZARD_FLOOD, 2, 1101};
     Alert warning;
     Alert critical;
     Alert next;
