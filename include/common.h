@@ -44,12 +44,15 @@ typedef struct {
     long timestamp;
 } Alert;
 
+#ifndef RISK_RESULT_DEFINED
+#define RISK_RESULT_DEFINED
 typedef struct {
     double score;
     RiskLevel level;
     int top_factor;
     int anomaly;
 } RiskResult;
+#endif
 
 typedef struct {
     int path[MAX_NODES];
@@ -57,10 +60,5 @@ typedef struct {
     double total_distance;
     Status status;
 } Route;
-
-typedef struct {
-    int location_id;
-    RiskResult result;
-} LocationRisk;
 
 #endif

@@ -3,22 +3,18 @@
 #include "system_controller.h"
 #include "glue.h"
 
-#define NUM_PLACES 4
-#define MAX_HISTORY 50
+#define MAX_PLACES 7
 
-static char place_names[NUM_PLACES][20] = {"Riverside", "Colony", "Market", "Temple"};
-static int place_ids[NUM_PLACES];
-static LocationRisk ranking[NUM_PLACES];
+static int place_ids[MAX_PLACES];
+static int place_count = 0;
+static LocationRisk ranking[MAX_PLACES];
 
-static Alert history[MAX_HISTORY];
-static int history_count = 0;
+static int blocked[MAX_NODES][MAX_NODES];
 
 static int ready = 0;
 static int data_loaded = 0;
 static int simulation_done = 0;
 static int scenario_number = 0;
-static int bridge_blocked = 0;
-static int hill_blocked = 0;
 static int report_counter = 0;
 static int clock_time = 0;
 
@@ -66,10 +62,10 @@ static const char *scenario_path(int number) {
 static int ask_place(void) {
     int i;
 
-    for (i = 0; i < NUM_PLACES; i++) {
-        printf("%d. %s\n", i + 1, place_names[i]);
+    for (i = 0; i < place_count; i++) {
+        printf("%d. %s\n", i + 1, glue_place_name(place_ids[i]));
     }
-    return read_int("Choose a place: ", 1, NUM_PLACES) - 1;
+    return read_int("Choose a place: ", 1, place_count) - 1;
 }
 
 static void show_menu(void) {
@@ -123,14 +119,14 @@ static void menu_run_simulation(void) {
     }
 
     glue_clear_alerts();
-    for (i = 0; i < NUM_PLACES; i++) {
+    for (i = 0; i < place_count; i++) {
         reports = glue_verified_reports(place_ids[i]);
         ranking[i].location_id = place_ids[i];
         ranking[i].result = glue_risk(place_ids[i], reports);
     }
-    glue_sort(ranking, NUM_PLACES);
+    glue_sort(ranking, place_count);
 
-    for (i = 0; i < NUM_PLACES; i++) {
+    for (i = 0; i < place_count; i++) {
         if (ranking[i].result.level >= RISK_WARNING) {
             glue_make_alert(ranking[i].location_id, ranking[i].result, clock_time);
         }
@@ -138,7 +134,7 @@ static void menu_run_simulation(void) {
     clock_time = clock_time + 1;
     simulation_done = 1;
 
-    printf("Risk calculated for %d places.\n", NUM_PLACES);
+    printf("Risk calculated for %d places.\n", place_count);
     printf("Highest risk: %s (%s)\n", glue_place_name(ranking[0].location_id),
            risk_name(ranking[0].result.level));
 }
@@ -151,8 +147,8 @@ static void menu_show_ranking(void) {
         return;
     }
     printf("\nPlaces from highest to lowest risk:\n");
-    for (i = 0; i < NUM_PLACES; i++) {
-        printf("%d. %-10s score %5.1f  %s\n", i + 1, glue_place_name(ranking[i].location_id),
+    for (i = 0; i < place_count; i++) {
+        printf("%d. %-14s score %5.1f  %s\n", i + 1, glue_place_name(ranking[i].location_id),
                ranking[i].result.score, risk_name(ranking[i].result.level));
     }
     printf("\nWhy %s is the highest:\n", glue_place_name(ranking[0].location_id));
@@ -161,7 +157,7 @@ static void menu_show_ranking(void) {
 
 static void menu_process_alerts(void) {
     Alert a;
-    char text[200];
+    char text[512];
     int count = 0;
 
     if (simulation_done == 0) {
@@ -170,12 +166,8 @@ static void menu_process_alerts(void) {
     }
     while (glue_next_alert(&a) == 1) {
         printf("\nALERT %d for %s (priority %d)\n", a.alert_id, glue_place_name(a.location_id), a.priority);
-        glue_alert_text(&a, text, 200);
+        glue_alert_text(&a, text, 512);
         printf("%s\n", text);
-        if (history_count < MAX_HISTORY) {
-            history[history_count] = a;
-            history_count++;
-        }
         count++;
     }
     if (count == 0) {
@@ -187,33 +179,38 @@ static void menu_process_alerts(void) {
 
 static void menu_show_history(void) {
     int i;
+    int total;
+    Alert a;
 
-    if (history_count == 0) {
+    total = glue_history_count();
+    if (total == 0) {
         printf("No alerts have been processed yet.\n");
         return;
     }
     printf("\nAlert history:\n");
-    for (i = 0; i < history_count; i++) {
-        printf("%d. Alert %d  %s  %s  priority %d\n", i + 1, history[i].alert_id,
-               glue_place_name(history[i].location_id), risk_name(history[i].level),
-               history[i].priority);
+    for (i = 0; i < total; i++) {
+        glue_history_get(i, &a);
+        printf("%d. Alert %d  %s  %s  priority %d\n", i + 1, a.alert_id,
+               glue_place_name(a.location_id), risk_name(a.level), a.priority);
     }
 }
 
 static void menu_submit_report(void) {
     CitizenReport r;
     int place;
+    int minutes;
     int result;
 
     place = ask_place();
     r.severity = read_int("Severity (1 to 5): ", 1, 5);
+    minutes = read_int("Minutes since the previous report (0 = right away): ", 0, 120);
 
     report_counter = report_counter + 1;
+    clock_time = clock_time + minutes * 60;
     r.report_id = report_counter;
     r.location_id = place_ids[place];
     r.hazard = HAZARD_FLOOD;
     r.timestamp = clock_time;
-    clock_time = clock_time + 5;
 
     result = glue_submit_report(r);
     if (result == STATUS_OK) {
@@ -223,7 +220,8 @@ static void menu_submit_report(void) {
     } else {
         printf("The report could not be saved.\n");
     }
-    printf("Similar reports for %s: %d\n", place_names[place], glue_verified_reports(place_ids[place]));
+    printf("Reports counted for %s: %d\n", glue_place_name(place_ids[place]),
+           glue_verified_reports(place_ids[place]));
 }
 
 static void run_route(int place, int mode) {
@@ -234,13 +232,13 @@ static void run_route(int place, int mode) {
     last_mode = mode;
     if (r.status != STATUS_OK) {
         last_route_found = 0;
-        printf("No safe route found from %s.\n", place_names[place]);
+        printf("No safe route found from %s.\n", glue_place_name(place_ids[place]));
         printf("Please stay on high ground and wait for help.\n");
         return;
     }
     last_route_found = 1;
     last_route = r;
-    printf("Route from %s:\n", place_names[place]);
+    printf("Route from %s:\n", glue_place_name(place_ids[place]));
     glue_print_route(&r);
     printf("Distance: %.1f km\n", r.total_distance);
 }
@@ -256,31 +254,37 @@ static void menu_find_route(void) {
 }
 
 static void menu_block_road(void) {
-    int road;
+    int total;
+    int i;
+    int from;
+    int to;
     int old_found;
     double old_distance;
 
-    road = read_int("1 = Bridge, 2 = Hill road: ", 1, 2);
-    if (road == 1) {
-        if (bridge_blocked == 0) {
-            bridge_blocked = 1;
-            glue_set_road("Bridge", "Market", ROAD_BLOCKED);
-            printf("Bridge is now BLOCKED.\n");
-        } else {
-            bridge_blocked = 0;
-            glue_set_road("Bridge", "Market", ROAD_OPEN);
-            printf("Bridge is now OPEN.\n");
+    total = glue_node_count();
+    for (i = 0; i < total; i++) {
+        printf("%d. %s\n", i + 1, glue_place_name(i));
+    }
+    from = read_int("Road starts at number: ", 1, total) - 1;
+    to = read_int("Road ends at number: ", 1, total) - 1;
+    if (from == to) {
+        printf("Please choose two different places.\n");
+        return;
+    }
+
+    if (blocked[from][to] == 0) {
+        if (glue_set_road(from, to, ROAD_BLOCKED) != STATUS_OK) {
+            printf("There is no road between these two places.\n");
+            return;
         }
+        blocked[from][to] = 1;
+        blocked[to][from] = 1;
+        printf("Road %s - %s is now BLOCKED.\n", glue_place_name(from), glue_place_name(to));
     } else {
-        if (hill_blocked == 0) {
-            hill_blocked = 1;
-            glue_set_road("HillRoad", "Temple", ROAD_BLOCKED);
-            printf("Hill road is now BLOCKED.\n");
-        } else {
-            hill_blocked = 0;
-            glue_set_road("HillRoad", "Temple", ROAD_OPEN);
-            printf("Hill road is now OPEN.\n");
-        }
+        glue_set_road(from, to, ROAD_OPEN);
+        blocked[from][to] = 0;
+        blocked[to][from] = 0;
+        printf("Road %s - %s is now OPEN.\n", glue_place_name(from), glue_place_name(to));
     }
 
     if (last_place >= 0) {
@@ -293,6 +297,21 @@ static void menu_block_road(void) {
                    last_route.total_distance);
         }
     }
+}
+
+static int count_blocked_roads(void) {
+    int i;
+    int j;
+    int count = 0;
+
+    for (i = 0; i < MAX_NODES; i++) {
+        for (j = i + 1; j < MAX_NODES; j++) {
+            if (blocked[i][j] == 1) {
+                count++;
+            }
+        }
+    }
+    return count;
 }
 
 static void menu_save_report(void) {
@@ -310,74 +329,100 @@ static void menu_save_report(void) {
     }
     fprintf(fp, "JalRakshak Report\n");
     fprintf(fp, "Scenario number: %d\n", scenario_number);
-    for (i = 0; i < NUM_PLACES; i++) {
+    for (i = 0; i < place_count; i++) {
         fprintf(fp, "%d. %s  score %.1f  %s\n", i + 1, glue_place_name(ranking[i].location_id),
                 ranking[i].result.score, risk_name(ranking[i].result.level));
     }
-    fprintf(fp, "Alerts processed: %d\n", history_count);
-    fprintf(fp, "Bridge blocked: %d\n", bridge_blocked);
-    fprintf(fp, "Hill road blocked: %d\n", hill_blocked);
+    fprintf(fp, "Alerts processed: %d\n", glue_history_count());
+    fprintf(fp, "Blocked roads: %d\n", count_blocked_roads());
     fclose(fp);
     printf("Report saved in data/report.txt\n");
 }
 
 static void menu_save_state(void) {
     FILE *fp;
+    int i;
+    int j;
 
     fp = fopen("data/state.txt", "w");
     if (fp == NULL) {
         printf("Error: could not create data/state.txt\n");
         return;
     }
-    fprintf(fp, "%d %d %d %d\n", scenario_number, bridge_blocked, hill_blocked, report_counter);
+    fprintf(fp, "%d %d %d\n", scenario_number, report_counter, count_blocked_roads());
+    for (i = 0; i < MAX_NODES; i++) {
+        for (j = i + 1; j < MAX_NODES; j++) {
+            if (blocked[i][j] == 1) {
+                fprintf(fp, "%d %d\n", i, j);
+            }
+        }
+    }
     fclose(fp);
-    glue_save_history("data/alert_history.txt");
+
+    if (glue_history_save("data/alert_history.txt") != STATUS_OK) {
+        printf("Error: could not save data/alert_history.txt\n");
+        return;
+    }
     printf("State saved in data/state.txt\n");
 }
 
 static void menu_load_state(void) {
     FILE *fp;
     int scenario;
-    int bridge;
-    int hill;
     int counter;
+    int pairs;
+    int i;
+    int j;
+    int u;
+    int v;
     int invalid = 0;
-    int count;
+    int total;
 
     fp = fopen("data/state.txt", "r");
     if (fp == NULL) {
         printf("Error: no saved state found.\n");
         return;
     }
-    if (fscanf(fp, "%d %d %d %d", &scenario, &bridge, &hill, &counter) != 4) {
+    if (fscanf(fp, "%d %d %d", &scenario, &counter, &pairs) != 3) {
         printf("Error: the state file is damaged.\n");
         fclose(fp);
         return;
     }
+
+    total = glue_node_count();
+    for (i = 0; i < MAX_NODES; i++) {
+        for (j = 0; j < MAX_NODES; j++) {
+            if (blocked[i][j] == 1) {
+                glue_set_road(i, j, ROAD_OPEN);
+                blocked[i][j] = 0;
+            }
+        }
+    }
+    for (i = 0; i < pairs; i++) {
+        if (fscanf(fp, "%d %d", &u, &v) != 2) {
+            break;
+        }
+        if (u >= 0 && u < total && v >= 0 && v < total) {
+            if (glue_set_road(u, v, ROAD_BLOCKED) == STATUS_OK) {
+                blocked[u][v] = 1;
+                blocked[v][u] = 1;
+            }
+        }
+    }
     fclose(fp);
 
     if (scenario >= 1 && scenario <= 3) {
-        count = glue_load_scenario(scenario_path(scenario), &invalid);
-        if (count > 0) {
+        if (glue_load_scenario(scenario_path(scenario), &invalid) > 0) {
             data_loaded = 1;
             scenario_number = scenario;
             simulation_done = 0;
         }
     }
-    if (bridge == 1) {
-        glue_set_road("Bridge", "Market", ROAD_BLOCKED);
-    } else {
-        glue_set_road("Bridge", "Market", ROAD_OPEN);
-    }
-    if (hill == 1) {
-        glue_set_road("HillRoad", "Temple", ROAD_BLOCKED);
-    } else {
-        glue_set_road("HillRoad", "Temple", ROAD_OPEN);
-    }
-    bridge_blocked = bridge;
-    hill_blocked = hill;
     report_counter = counter;
-    glue_load_history("data/alert_history.txt");
+
+    if (glue_history_load("data/alert_history.txt") != STATUS_OK) {
+        printf("Note: no alert history was loaded.\n");
+    }
     printf("State loaded. Run the simulation again to see the risk.\n");
 }
 
@@ -392,44 +437,62 @@ int get_summary(double *score, int *level, int *place) {
 }
 
 int get_history_count(void) {
-    return history_count;
+    return glue_history_count();
 }
 
 Alert get_history_item(int index) {
-    return history[index];
+    Alert a;
+
+    a.alert_id = 0;
+    a.location_id = 0;
+    a.level = RISK_NORMAL;
+    a.confidence = 0;
+    a.priority = 0;
+    a.timestamp = 0;
+    glue_history_get(index, &a);
+    return a;
 }
 
 void system_init(void) {
     int i;
+    int j;
+    int total;
 
-    history_count = 0;
     ready = 0;
     data_loaded = 0;
     simulation_done = 0;
     scenario_number = 0;
-    bridge_blocked = 0;
-    hill_blocked = 0;
     report_counter = 0;
     clock_time = 0;
     last_place = -1;
     last_route_found = 0;
+    place_count = 0;
+    for (i = 0; i < MAX_NODES; i++) {
+        for (j = 0; j < MAX_NODES; j++) {
+            blocked[i][j] = 0;
+        }
+    }
 
     printf("=====================================\n");
     printf(" JalRakshak - Flood Early Warning\n");
     printf("=====================================\n");
 
     if (glue_start() != 0) {
-        printf("Error: could not start the modules. Is data/map.txt there?\n");
+        printf("Error: could not start the modules.\n");
+        return;
+    }
+    total = glue_node_count();
+    for (i = 0; i < total && place_count < MAX_PLACES; i++) {
+        if (glue_is_shelter(i) == 0) {
+            place_ids[place_count] = i;
+            place_count++;
+        }
+    }
+    if (place_count == 0) {
+        printf("Error: the map has no places to watch.\n");
         return;
     }
     ready = 1;
-    for (i = 0; i < NUM_PLACES; i++) {
-        place_ids[i] = glue_find_place(place_names[i]);
-        if (place_ids[i] < 0) {
-            printf("Error: place %s was not found in the map.\n", place_names[i]);
-            ready = 0;
-        }
-    }
 }
 
 void system_run(void) {
@@ -458,6 +521,8 @@ void system_run(void) {
             case 0:  printf("Goodbye!\n");   break;
         }
     } while (choice != 0);
+}
 
+void system_close(void) {
     glue_end();
 }

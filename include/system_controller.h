@@ -9,6 +9,7 @@ extern "C" {
 
 void system_init(void);
 void system_run(void);
+void system_close(void);
 int get_summary(double *score, int *level, int *place);
 int get_history_count(void);
 Alert get_history_item(int index);

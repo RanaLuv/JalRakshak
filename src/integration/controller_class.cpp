@@ -39,7 +39,6 @@ void SystemController::checkDataFiles() {
     checkFileExists("data/readings_normal.txt");
     checkFileExists("data/readings_flood.txt");
     checkFileExists("data/readings_critical.txt");
-    checkFileExists("data/map.txt");
 }
 
 void SystemController::writeLog(const string &text) {
@@ -81,6 +80,7 @@ void SystemController::start() {
     system_run();
 
     saveFinalReports();
+    system_close();
     writeLog("ended");
 }
 

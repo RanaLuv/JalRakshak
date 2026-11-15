@@ -41,6 +41,12 @@ int detect_spike(const double *v, int n, double limit) {
     return 0;
 }
 
+static double susceptibility_of(int loc) {
+    static const double table[9] = {0.9, 0.6, 0.5, 0.7, 0.7, 0.2, 0.4, 0.1, 0.3};
+    if (loc >= 0 && loc < 9) return table[loc];
+    return 0.5;
+}
+
 // 3. Main Risk Calculation
 RiskResult compute_location_risk(int loc, const double *rain, int nr, const double *water, int nw, int reports) {
     RiskResult result = {0};
@@ -58,7 +64,9 @@ RiskResult compute_location_risk(int loc, const double *rain, int nr, const doub
     double report_score = (reports > 5 ? 1.0 : reports / 5.0) * g_weights.reports;
     double spike_penalty = has_spike ? g_weights.trend : 0.0; 
     
-    result.score = rain_score + report_score + spike_penalty;
+    double susc_score = susceptibility_of(loc) * g_weights.susceptibility;
+
+    result.score = rain_score + report_score + spike_penalty + susc_score;
     if (result.score > 100.0) result.score = 100.0;
     
     if (result.score < 30) result.level = RISK_NORMAL;
@@ -67,8 +75,11 @@ RiskResult compute_location_risk(int loc, const double *rain, int nr, const doub
     else result.level = RISK_CRITICAL;
     
     result.anomaly = has_spike;
-    if (rain_score >= report_score) result.top_factor = 0; 
-    else result.top_factor = 3; 
+    double best = rain_score;
+    result.top_factor = 0;
+    if (spike_penalty > best) { best = spike_penalty; result.top_factor = 1; }
+    if (susc_score > best) { best = susc_score; result.top_factor = 2; }
+    if (report_score > best) { best = report_score; result.top_factor = 3; }
     
     return result;
 }
