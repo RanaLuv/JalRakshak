@@ -1,7 +1,7 @@
 #ifndef RISK_CALCULATOR_HPP
 #define RISK_CALCULATOR_HPP
 
-// Piche jaakar include folder se risk.h utha rahe hain
+// risk.h from previous folder
 #include "../../include/risk.h" 
 #include <stdexcept>
 #include <vector>

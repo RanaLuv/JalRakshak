@@ -61,7 +61,6 @@ RiskResult compute_location_risk(int loc, const double *rain, int nr, const doub
     result.score = rain_score + report_score + spike_penalty;
     if (result.score > 100.0) result.score = 100.0;
     
-    // Yahan Luv wale RISK_ prefixes lagaye hain
     if (result.score < 30) result.level = RISK_NORMAL;
     else if (result.score < 60) result.level = RISK_WATCH;
     else if (result.score < 80) result.level = RISK_WARNING;
@@ -91,7 +90,7 @@ RiskResult landslide_risk(double rain_avg, double slope, int reports) {
     return result;
 }
 
-// 5. Custom Sorting (No qsort allowed)
+// 5. Sorting
 void sort_by_risk(LocationRisk *arr, int n) {
     for (int i = 0; i < n - 1; i++) {
         for (int j = 0; j < n - i - 1; j++) {
@@ -119,7 +118,6 @@ void explain_risk(const RiskResult *r) {
     printf("Risk Score: %.2f%%\n", r->score);
     
     printf("Risk Level: ");
-    // Yahan Luv wale RISK_ prefixes lagaye hain
     if (r->level == RISK_NORMAL) printf("NORMAL\n");
     else if (r->level == RISK_WATCH) printf("WATCH\n");
     else if (r->level == RISK_WARNING) printf("WARNING\n");
