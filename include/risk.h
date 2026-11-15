@@ -9,7 +9,6 @@
 extern "C" {
 #endif
 
-// --- TEMPORARY FIX: Jab tak Luv update nahi karta ---
 #ifndef RISK_RESULT_DEFINED
 #define RISK_RESULT_DEFINED
 typedef struct {
@@ -21,7 +20,7 @@ typedef struct {
 #endif
 // ----------------------------------------------------
 
-// Config read karne ke liye structs
+// struct for config readings
 typedef struct {
     double rain;
     double trend;
@@ -34,13 +33,13 @@ typedef struct {
     double rain_max;
 } Thresholds;
 
-// Locations ko rank/sort karne ke liye struct
+// struct for rankint/sorting of locationg
 typedef struct {
     int location_id;
     RiskResult result;
 } LocationRisk;
 
-// --- Phase 2 ke saare function prototypes ---
+//--- function prototypes ---
 Status load_config(const char *path, RiskWeights *w, Thresholds *t);
 RiskResult compute_location_risk(int loc, const double *rain, int nr, const double *water, int nw, int reports);
 int detect_spike(const double *v, int n, double limit);
