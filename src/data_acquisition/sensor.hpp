@@ -1,5 +1,5 @@
-#ifndef SENSOR_HPP
-#define SENSOR_HPP
+#ifndef SENSOR_hpp
+#define SENSOR_hpp
 
 #include <iostream>
 extern "C" {
