@@ -1,5 +1,3 @@
-// main.cpp 
-
 #include <iostream>
 #include "controller_class.h"
 
@@ -12,6 +10,10 @@ int main() {
     }
     catch (const SystemException &e) {
         cout << "System error: " << e.what() << endl;
+        return 1;
+    }
+    catch (const exception &e) {
+        cout << "Error: " << e.what() << endl;
         return 1;
     }
 

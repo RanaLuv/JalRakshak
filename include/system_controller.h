@@ -1,15 +1,17 @@
-/* system_controller.h - functions of the main controller (Role 6) */
-
 #ifndef SYSTEM_CONTROLLER_H
 #define SYSTEM_CONTROLLER_H
 
-/* These two lines let the C++ files use these C functions */
+#include "common.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void system_init(void);   /* set everything to the starting values */
-void system_run(void);    /* show the menu again and again until exit */
+void system_init(void);
+void system_run(void);
+int get_summary(double *score, int *level, int *place);
+int get_history_count(void);
+Alert get_history_item(int index);
 
 #ifdef __cplusplus
 }
