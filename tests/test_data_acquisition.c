@@ -26,15 +26,15 @@ int main(void) {
     rq_free(q0);
 
     /* 4. Flood file: 13 valid lines, 1 rejected */
-    generate_scenario_file("data/readings_flood.txt", 1, 6);
-    FILE *f = fopen("data/readings_flood.txt", "a");
+    generate_scenario_file("data/readings_test.txt", 1, 6);
+    FILE *f = fopen("data/readings_test.txt", "a");
     fprintf(f, "10 0 5.00 1700000999 1\n");   /* valid line */
     fprintf(f, "10 0 -1.00 1700001000 1\n");  /* bad line: negative rain */
     fclose(f);
 
     int invalid = 0;
     ReadingQueue *q = rq_create();
-    int ok = load_readings("data/readings_flood.txt", q, &invalid);
+    int ok = load_readings("data/readings_test.txt", q, &invalid);
     printf("read %d valid, %d rejected\n", ok, invalid);
 
     /* 5. Ingest into rain and water buffers (size 5) */
