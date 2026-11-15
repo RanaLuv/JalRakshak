@@ -36,4 +36,10 @@ void rq_free(ReadingQueue *q);
 Status validate_reading(const SensorReading *r);
 
 SensorReading sim_generate(SensorType t, int loc, int scenario, int step);
+int load_readings(const char *path, ReadingQueue *q, int *invalid);
+int ingest_all(ReadingQueue *q, CircularBuffer *rain, CircularBuffer *water);
+int get_recent_values(CircularBuffer *cb, int n, double *out);
+double cb_latest(CircularBuffer *cb);
+void cb_print(CircularBuffer *cb);
+int generate_scenario_file(const char *path, int scenario, int steps);
 #endif
