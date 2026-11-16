@@ -1,9 +1,11 @@
 JalRakshak Report
 Scenario number: 2
-1. Riverside  score 63.3  WARNING
-2. Market  score 63.3  WARNING
-3. OldTown  score 63.3  WARNING
-4. BridgeWest  score 63.3  WARNING
-5. BridgeEast  score 63.3  WARNING
-Alerts processed: 5
-Blocked roads: 0
+1. Riverside  score 81.3  CRITICAL
+2. BridgeWest  score 77.3  WARNING
+3. BridgeEast  score 77.3  WARNING
+4. Market  score 75.3  WARNING
+5. OldTown  score 73.3  WARNING
+6. HillRoad  score 71.3  WARNING
+7. Hospital  score 69.3  WARNING
+Alerts processed: 7
+Blocked roads: 2

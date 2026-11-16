@@ -1,4 +1,4 @@
-# Demo Script (about 5 minutes)
+# Demo(about 5 minutes)
 
 1. Show the GitHub repository: branches, merged pull requests, folder structure.
 2. Build and start the program.

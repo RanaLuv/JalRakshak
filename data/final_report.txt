@@ -1,0 +1,46 @@
+--- Risk Report ---
+Location: 0
+Risk score: 81.3333 out of 100
+Risk level: CRITICAL
+--- Alert Report ---
+Alert number: 1
+Location: 0
+Level: CRITICAL
+Confidence: 40%
+Message: Flood risk is high. Please check the safe route.
+--- Alert Report ---
+Alert number: 7
+Location: 8
+Level: WARNING
+Confidence: 40%
+Message: Flood risk is high. Please check the safe route.
+--- Alert Report ---
+Alert number: 6
+Location: 6
+Level: WARNING
+Confidence: 40%
+Message: Flood risk is high. Please check the safe route.
+--- Alert Report ---
+Alert number: 5
+Location: 2
+Level: WARNING
+Confidence: 40%
+Message: Flood risk is high. Please check the safe route.
+--- Alert Report ---
+Alert number: 4
+Location: 1
+Level: WARNING
+Confidence: 40%
+Message: Flood risk is high. Please check the safe route.
+--- Alert Report ---
+Alert number: 3
+Location: 4
+Level: WARNING
+Confidence: 40%
+Message: Flood risk is high. Please check the safe route.
+--- Alert Report ---
+Alert number: 2
+Location: 3
+Level: WARNING
+Confidence: 40%
+Message: Flood risk is high. Please check the safe route.
